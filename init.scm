@@ -178,6 +178,8 @@
                      (E ":yank-long-word")
                      (b ":yank-prev-word")
                      (B ":yank-prev-long-word")
+                     (f ":yank-find-char")
+                     (t ":yank-till-char")
                      ($ ":yank-line-end")
                      ("0" ":yank-line-start")
                      (^ ":yank-line-start-non-whitespace"))
@@ -507,7 +509,11 @@
          yank-long-word
          yank-prev-word
          yank-prev-long-word
+         yank-find-char
+         yank-till-char
          yank-line-end
          yank-line-start
          yank-line-start-non-whitespace
-         vim-yank-line)
+         vim-yank-line
+         *yank-flash-delay*
+         *yank-flash-scope*)

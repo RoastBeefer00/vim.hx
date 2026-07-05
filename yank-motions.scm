@@ -4,6 +4,7 @@
 (require "utils.scm")
 (require "visual-motions.scm")
 (require "helix/misc.scm")
+(require "helix/components.scm")
 (require "helix/editor.scm")
 
 (require-builtin steel/time)
@@ -14,26 +15,18 @@
 ;; Requires set-document-highlights! / selection-char-ranges (helix-steel
 ;; script-highlights API). Uses eval so it degrades gracefully on older builds.
 
-(define *yank-flash-scope* "ui.selection.primary")
+(define *yank-flash-scope* "ui.selection")
 (define *yank-flash-delay* 350)
 
 (define (yank-flash! ranges)
   (unless (null? ranges)
-    (with-handler
-     (lambda (e) (void))
-     (let ([set-hl! (eval 'set-document-highlights!)])
-       (set-hl! "yank" ranges *yank-flash-scope*)
-       (enqueue-thread-local-callback-with-delay
-        *yank-flash-delay*
-        (lambda ()
-          (with-handler
-           (lambda (e) (void))
-           ((eval 'clear-document-highlights!) "yank"))))))))
+    (set-document-highlights! "yank" ranges *yank-flash-scope*)
+    (enqueue-thread-local-callback-with-delay
+     *yank-flash-delay*
+     (lambda () (clear-document-highlights! "yank")))))
 
 (define (yank-selection-ranges)
-  (with-handler
-   (lambda (e) '())
-   ((eval 'selection-char-ranges))))
+  (selection-char-ranges))
 
 (define (yank-impl func)
   (when (func)
@@ -77,6 +70,51 @@
   (helix.static.flip_selections)
   (helix.static.collapse_selection)
   (yank-flash! ranges))
+
+;; yf{char}
+(define (yank-find-char)
+  (on-key-callback
+   (lambda (key-event)
+     (define char (on-key-event-char key-event))
+     (when char
+       (define rope (get-document-as-slice))
+       (define start-pos (cursor-position))
+       (define len (rope-len-chars rope))
+       (let loop ([i 1])
+         (define pos (+ start-pos i))
+         (cond
+           [(>= pos len) (void)]
+           [(char=? (rope-char-ref rope pos) char)
+            (extend-right-n i)
+            (define ranges (yank-selection-ranges))
+            (helix.static.yank_main_selection_to_clipboard)
+            (helix.static.flip_selections)
+            (helix.static.collapse_selection)
+            (yank-flash! ranges)]
+           [else (loop (+ i 1))]))))))
+
+;; yt{char}
+(define (yank-till-char)
+  (on-key-callback
+   (lambda (key-event)
+     (define char (on-key-event-char key-event))
+     (when char
+       (define rope (get-document-as-slice))
+       (define start-pos (cursor-position))
+       (define len (rope-len-chars rope))
+       (let loop ([i 1])
+         (define pos (+ start-pos i))
+         (cond
+           [(>= pos len) (void)]
+           [(char=? (rope-char-ref rope pos) char)
+            (when (> i 1)
+              (extend-right-n (- i 1))
+              (define ranges (yank-selection-ranges))
+              (helix.static.yank_main_selection_to_clipboard)
+              (helix.static.flip_selections)
+              (helix.static.collapse_selection)
+              (yank-flash! ranges))]
+           [else (loop (+ i 1))]))))))
 
 ;; yb
 (define (yank-prev-word)
@@ -208,7 +246,11 @@
          yank-long-word
          yank-prev-word
          yank-prev-long-word
+         yank-find-char
+         yank-till-char
          yank-line-end
          yank-line-start
          yank-line-start-non-whitespace
-         vim-yank-line)
+         vim-yank-line
+         *yank-flash-delay*
+         *yank-flash-scope*)

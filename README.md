@@ -17,6 +17,18 @@ forge pkg install --git https://github.com/mattwparas/vim.hx.git
 (set-vim-keybindings!)
 ```
 
+## Configuration
+
+After calling `(set-vim-keybindings!)`, you can tune these variables:
+
+```scheme
+;; Duration of the yank highlight flash in milliseconds (default: 350)
+(set! *yank-flash-delay* 350)
+
+;; Theme scope used for the yank highlight (default: "ui.selection")
+(set! *yank-flash-scope* "ui.selection")
+```
+
 ## Contributors
 
 Besides myself:
