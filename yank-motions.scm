@@ -11,22 +11,33 @@
 (require-builtin helix/core/text)
 
 ;; Yank flash: briefly highlight the yanked region as visual confirmation.
-;; Requires set-document-highlights! / selection-char-ranges from helix/misc.scm
-;; (available in helix-steel builds with the script-highlights feature).
+;; Requires set-document-highlights! / selection-char-ranges (helix-steel
+;; script-highlights API). Uses eval so it degrades gracefully on older builds.
 
 (define *yank-flash-scope* "ui.selection.primary")
 (define *yank-flash-delay* 350)
 
 (define (yank-flash! ranges)
   (unless (null? ranges)
-    (set-document-highlights! "yank" ranges *yank-flash-scope*)
-    (enqueue-thread-local-callback-with-delay
-     *yank-flash-delay*
-     (lambda () (clear-document-highlights! "yank")))))
+    (with-handler
+     (lambda (e) (void))
+     (let ([set-hl! (eval 'set-document-highlights!)])
+       (set-hl! "yank" ranges *yank-flash-scope*)
+       (enqueue-thread-local-callback-with-delay
+        *yank-flash-delay*
+        (lambda ()
+          (with-handler
+           (lambda (e) (void))
+           ((eval 'clear-document-highlights!) "yank"))))))))
+
+(define (yank-selection-ranges)
+  (with-handler
+   (lambda (e) '())
+   ((eval 'selection-char-ranges))))
 
 (define (yank-impl func)
   (when (func)
-    (define ranges (selection-char-ranges))
+    (define ranges (yank-selection-ranges))
     (helix.static.yank_main_selection_to_clipboard)
     (helix.static.flip_selections)
     (helix.static.collapse_selection)
@@ -50,7 +61,7 @@
   (vim-extend-next-word-start)
   (set-editor-count! 1)
   (helix.static.extend_char_left)
-  (define ranges (selection-char-ranges))
+  (define ranges (yank-selection-ranges))
   (helix.static.yank_main_selection_to_clipboard)
   (helix.static.flip_selections)
   (helix.static.collapse_selection)
@@ -61,7 +72,7 @@
   (vim-extend-next-long-word-start)
   (set-editor-count! 1)
   (helix.static.extend_char_left)
-  (define ranges (selection-char-ranges))
+  (define ranges (yank-selection-ranges))
   (helix.static.yank_main_selection_to_clipboard)
   (helix.static.flip_selections)
   (helix.static.collapse_selection)
@@ -95,7 +106,7 @@
     (set-editor-count! (- count 1))
     (helix.static.extend_line_down))
   (helix.static.extend_to_line_bounds)
-  (define ranges (selection-char-ranges))
+  (define ranges (yank-selection-ranges))
   (helix.static.yank_main_selection_to_clipboard)
   (helix.static.normal_mode)
   (helix.static.collapse_selection)
