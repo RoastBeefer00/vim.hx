@@ -10,13 +10,27 @@
 
 (require-builtin helix/core/text)
 
-;; TODO: implement for yank commands using custom implementations
+;; Yank flash: briefly highlight the yanked region as visual confirmation.
+;; Requires set-document-highlights! / selection-char-ranges from helix/misc.scm
+;; (available in helix-steel builds with the script-highlights feature).
+
+(define *yank-flash-scope* "ui.selection.primary")
+(define *yank-flash-delay* 350)
+
+(define (yank-flash! ranges)
+  (unless (null? ranges)
+    (set-document-highlights! "yank" ranges *yank-flash-scope*)
+    (enqueue-thread-local-callback-with-delay
+     *yank-flash-delay*
+     (lambda () (clear-document-highlights! "yank")))))
 
 (define (yank-impl func)
   (when (func)
+    (define ranges (selection-char-ranges))
     (helix.static.yank_main_selection_to_clipboard)
     (helix.static.flip_selections)
-    (helix.static.collapse_selection)))
+    (helix.static.collapse_selection)
+    (yank-flash! ranges)))
 
 ;; y (select)
 (define (vim-yank-selection)
@@ -36,18 +50,22 @@
   (vim-extend-next-word-start)
   (set-editor-count! 1)
   (helix.static.extend_char_left)
+  (define ranges (selection-char-ranges))
   (helix.static.yank_main_selection_to_clipboard)
   (helix.static.flip_selections)
-  (helix.static.collapse_selection))
+  (helix.static.collapse_selection)
+  (yank-flash! ranges))
 
 ;; yW
 (define (yank-long-word)
   (vim-extend-next-long-word-start)
   (set-editor-count! 1)
   (helix.static.extend_char_left)
+  (define ranges (selection-char-ranges))
   (helix.static.yank_main_selection_to_clipboard)
   (helix.static.flip_selections)
-  (helix.static.collapse_selection))
+  (helix.static.collapse_selection)
+  (yank-flash! ranges))
 
 ;; yb
 (define (yank-prev-word)
@@ -75,24 +93,18 @@
   (define count (editor-count))
   (when (> count 1)
     (set-editor-count! (- count 1))
-    (helix.static.extend_line_down)
-  )
+    (helix.static.extend_line_down))
   (helix.static.extend_to_line_bounds)
+  (define ranges (selection-char-ranges))
   (helix.static.yank_main_selection_to_clipboard)
-
-  ;; Flash the selection briefly (if highlight_selections exists)
-  ;; This provides visual feedback
-  ;; (when (defined? 'helix.static.highlight_selections)
-  ;;   (helix.static.highlight_selections))
-
   (helix.static.normal_mode)
   (helix.static.collapse_selection)
-
   (define current-pos (cursor-position))
   (define distance (- start-pos current-pos))
   (cond
     [(> distance 0) (move-right-n distance)]
-    [(< distance 0) (move-left-n (- distance))]))
+    [(< distance 0) (move-left-n (- distance))])
+  (yank-flash! ranges))
 
 ;; yap/yip
 (define (yank-around-paragraph)        (yank-impl select-around-paragraph))
