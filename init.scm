@@ -29,6 +29,20 @@
                   (t ":vim-find-till-char")
                   (T ":vim-till-prev-char")
                   (a ":vim-append-mode")
+                  (A "insert_at_line_end")
+                  (I ":vim-insert-at-line-start")
+                  (o "open_below")
+                  (O "open_above")
+                  (v "select_mode")
+                  (r "replace")
+                  (s ":vim-substitute-char")
+                  (J ":vim-join-lines")
+                  ("~" ":vim-toggle-case")
+                  ("*" ":vim-search-word-forward")
+                  ("#" ":vim-search-word-backward")
+                  (H ":vim-window-top")
+                  (M ":vim-window-middle")
+                  (L ":vim-window-bottom")
                   (u ":vim-undo")
                   (w ":vim-next-word-start")
                   (e ":vim-next-word-end")
@@ -51,7 +65,9 @@
                      (E ":vim-delete-long-word-end")
                      ($ ":vim-delete-line-end")
                      (^ ":vim-delete-line-start")
+                     ("0" ":vim-delete-line-col0")
                      (a (w ":vim-delete-around-word")
+                        (W ":vim-delete-around-long-word")
                         (p ":vim-delete-around-paragraph")
                         (f ":vim-delete-around-function")
                         (c ":vim-delete-around-comment")
@@ -66,6 +82,7 @@
                         ("\"" ":vim-delete-around-double-quote")
                         ("'" ":vim-delete-around-single-quote"))
                      (i (w ":vim-delete-inner-word")
+                        (W ":vim-delete-inner-long-word")
                         (p ":vim-delete-inner-paragraph")
                         (f ":vim-delete-inner-function")
                         (c ":vim-delete-inner-comment")
@@ -88,7 +105,9 @@
                      (E ":vim-change-long-word-end")
                      ($ ":vim-change-line-end")
                      (^ ":vim-change-line-start")
+                     ("0" ":vim-change-line-col0")
                      (a (w ":vim-change-around-word")
+                        (W ":vim-change-around-long-word")
                         (p ":vim-change-around-paragraph")
                         (f ":vim-change-around-function")
                         (c ":vim-change-around-comment")
@@ -103,6 +122,7 @@
                         ("\"" ":vim-change-around-double-quote")
                         ("'" ":vim-change-around-single-quote"))
                      (i (w ":vim-change-inner-word")
+                        (W ":vim-change-inner-long-word")
                         (p ":vim-change-inner-paragraph")
                         (f ":vim-change-inner-function")
                         (c ":vim-change-inner-comment")
@@ -123,27 +143,43 @@
                      ;; TODO: around/inner long word
                      ;; TODO: paragraph, function, comment, test, html tag, etc.
                      (a (w ":yank-around-word")
+                        (W ":yank-around-long-word")
                         (p ":yank-around-paragraph")
                         (f ":yank-around-function")
                         (c ":yank-around-comment")
                         (e ":yank-around-data-structure")
                         (x ":yank-around-html-tag")
                         (t ":yank-around-type-definition")
-                        (T ":yank-around-test"))
+                        (T ":yank-around-test")
+                        ("{" ":yank-around-curly")
+                        ("[" ":yank-around-square")
+                        ("(" ":yank-around-paren")
+                        ("<" ":yank-around-arrow")
+                        ("\"" ":yank-around-double-quote")
+                        ("'" ":yank-around-single-quote"))
                      (i (w ":yank-inner-word")
+                        (W ":yank-inner-long-word")
                         (p ":yank-inner-paragraph")
                         (f ":yank-inner-function")
                         (c ":yank-inner-comment")
                         (e ":yank-inner-data-structure")
                         (x ":yank-inner-html-tag")
                         (t ":yank-inner-type-definition")
-                        (T ":yank-inner-test"))
+                        (T ":yank-inner-test")
+                        ("{" ":yank-inner-curly")
+                        ("[" ":yank-inner-square")
+                        ("(" ":yank-inner-paren")
+                        ("<" ":yank-inner-arrow")
+                        ("\"" ":yank-inner-double-quote")
+                        ("'" ":yank-inner-single-quote"))
                      (w ":yank-word")
                      (W ":yank-long-word")
                      (e ":yank-word")
                      (E ":yank-long-word")
                      (b ":yank-prev-word")
                      (B ":yank-prev-long-word")
+                     (f ":yank-find-char")
+                     (t ":yank-till-char")
                      ($ ":yank-line-end")
                      ("0" ":yank-line-start")
                      (^ ":yank-line-start-non-whitespace"))
@@ -162,6 +198,12 @@
                   (C ":vim-change-line-end")
                   ("{" ":vim-goto-prev-paragraph")
                   ("}" ":vim-goto-next-paragraph")
+                  (g (g ":vim-goto-file-start")
+                     (u (u ":vim-lowercase-line"))
+                     (U (U ":vim-uppercase-line")))
+                  (z (z ":vim-scroll-center")
+                     (t ":vim-scroll-top")
+                     (b ":vim-scroll-bottom"))
                   ;; NOTE: this implementation uses the , register
                   ;; so be careful with saving other things there
                   ("," ":vim-repeat-last-find")
@@ -171,6 +213,7 @@
           ;; Select bindings
           ;; TODO: Rename this to VIS (nacl TODO: figure out if I care)
           (select (a (w ":select-around-word")
+                     (W ":select-around-long-word")
                      (p ":select-around-paragraph")
                      (f ":select-around-function")
                      (c ":select-around-comment")
@@ -185,6 +228,7 @@
                      ("\"" ":select-around-double-quote")
                      ("'" ":select-around-single-quote"))
                   (i (w ":select-inner-word")
+                     (W ":select-inner-long-word")
                      (p ":select-inner-paragraph")
                      (f ":select-inner-function")
                      (c ":select-inner-comment")
@@ -226,15 +270,30 @@
                   ("=" ":reflow")
                   (> (> "indent"))
                   (< (< "unindent"))
+                  (o "flip_selections")
+                  (u "switch_to_lowercase")
+                  (U "switch_to_uppercase")
+                  ("~" "switch_case")
                   (left ":extend-char-left-same-line")
                   (right ":extend-char-right-same-line")
                   (down ":extend-line-down")
                   (up ":extend-line-up")
                   (esc ":exit-visual-line-mode"))
-          (insert (C-d "unindent") (C-t "indent") (esc ":vim-exit-insert-mode"))))
+          (insert (C-d "unindent") (C-t "indent") (C-w "delete_word_backward") (C-u "kill_to_line_start") (esc ":vim-exit-insert-mode"))))
+
+;; Priority-override keymap for VIS-LINE steel mode. Only the keys that differ
+;; from regular select mode are listed here; everything else falls through to
+;; the buffer keymap (the full vim select bindings registered above).
+(define vis-line-keymap
+  (keymap (select (j ":extend-line-down-vis-line")
+                  (k ":extend-line-up-vis-line")
+                  (down ":extend-line-down-vis-line")
+                  (up ":extend-line-up-vis-line")
+                  (esc ":exit-visual-line-mode"))))
 
 (define (set-vim-keybindings!)
-  (add-global-keybinding vim-keybindings))
+  (add-global-keybinding vim-keybindings)
+  (register-steel-mode-keymap! "VIS-LINE" vis-line-keymap))
 
 (provide set-vim-keybindings!)
 ;; change motions
@@ -248,8 +307,11 @@
          vim-change-long-word-end
          vim-change-line-end
          vim-change-line-start
+         vim-change-line-col0
          vim-change-around-word
          vim-change-inner-word
+         vim-change-around-long-word
+         vim-change-inner-long-word
          vim-change-around-paragraph
          vim-change-inner-paragraph
          vim-change-around-function
@@ -276,15 +338,6 @@
          vim-change-inner-single-quote
          vim-change-around-arrow
          vim-change-inner-arrow
-         vim-change-inner-square
-         vim-change-inner-paren
-         vim-change-around-paren
-         vim-change-around-double-quote
-         vim-change-inner-double-quote
-         vim-change-around-single-quote
-         vim-change-inner-single-quote
-         vim-change-around-arrow
-         vim-change-inner-arrow
 
          ;; delete motions
          vim-delete-selection
@@ -295,8 +348,11 @@
          vim-delete-long-word
          vim-delete-line-end
          vim-delete-line-start
+         vim-delete-line-col0
          vim-delete-around-word
          vim-delete-inner-word
+         vim-delete-around-long-word
+         vim-delete-inner-long-word
          vim-delete-around-paragraph
          vim-delete-inner-paragraph
          vim-delete-prev-word
@@ -352,18 +408,37 @@
          vim-goto-prev-paragraph
          visual-line-mode
          vim-exit-insert-mode
+         vim-goto-file-start
+         vim-insert-at-line-start
+         vim-join-lines
+         vim-toggle-case
+         vim-scroll-center
+         vim-scroll-top
+         vim-scroll-bottom
+         vim-window-top
+         vim-window-middle
+         vim-window-bottom
+         vim-search-word-forward
+         vim-search-word-backward
+         vim-substitute-char
+         vim-lowercase-line
+         vim-uppercase-line
 
          ;; visual motions
          extend-char-right-same-line
          extend-char-left-same-line
          extend-line-up
+         extend-line-up-vis-line
          extend-line-down
+         extend-line-down-vis-line
          vim-extend-next-word-start
          vim-extend-next-long-word-start
          vim-extend-to-next-paragraph
          vim-extend-to-prev-paragraph
          select-around-word
          select-inner-word
+         select-around-long-word
+         select-inner-long-word
          select-around-paragraph
          select-inner-paragraph
          select-around-function
@@ -402,11 +477,43 @@
          vim-yank-selection
          yank-around-word
          yank-inner-word
+         yank-around-long-word
+         yank-inner-long-word
+         yank-around-paragraph
+         yank-inner-paragraph
+         yank-around-function
+         yank-inner-function
+         yank-around-comment
+         yank-inner-comment
+         yank-around-data-structure
+         yank-inner-data-structure
+         yank-around-html-tag
+         yank-inner-html-tag
+         yank-around-type-definition
+         yank-inner-type-definition
+         yank-around-test
+         yank-inner-test
+         yank-around-curly
+         yank-inner-curly
+         yank-around-square
+         yank-inner-square
+         yank-around-paren
+         yank-inner-paren
+         yank-around-double-quote
+         yank-inner-double-quote
+         yank-around-single-quote
+         yank-inner-single-quote
+         yank-around-arrow
+         yank-inner-arrow
          yank-word
          yank-long-word
          yank-prev-word
          yank-prev-long-word
+         yank-find-char
+         yank-till-char
          yank-line-end
          yank-line-start
          yank-line-start-non-whitespace
-         vim-yank-line)
+         vim-yank-line
+         *yank-flash-delay*
+         *yank-flash-scope*)

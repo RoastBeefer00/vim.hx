@@ -6,6 +6,13 @@
 
 (require-builtin helix/core/text)
 
+(define cursor-position hx.cx->pos)
+
+;; editor-count requires a binary newer than the current install; stub returns 1
+(define (editor-count) 1)
+;; set-editor-count! has no Rust counterpart; helix auto-resets count after each command
+(define (set-editor-count! n) void)
+
 (define (get-document-as-slice)
   (let* ([focus (editor-focus)]
          [focus-doc-id (editor->doc-id focus)])
@@ -45,15 +52,6 @@
            (char=? ch #\')
            (char=? ch #\<)
            (char=? ch #\>))))
-
-(define (get-selection-range)
-  ;; Try to get selection info from editor
-  ;; This may need adjustment based on actual Steel API
-  (let* ([focus (editor-focus)]
-         [focus-doc-id (editor->doc-id focus)])
-    ;; If there's an API like editor->selection-range, use it
-    ;; For now, we'll use a workaround
-    #f))
 
 ;; Helper to check if we have a real selection (more than 1 char)
 (define (has-real-selection? start-pos)
@@ -146,13 +144,17 @@
             #t]
            [else (loop (+ i 1))]))])))
 
-(define *visual-line-mode-box* (box #f))
-
 (define (set-visual-line-mode! val)
-  (set-box! *visual-line-mode-box* val))
+  (with-handler
+     (lambda (e) (void))
+        (if val
+            ((eval 'set-steel-mode!) "VIS-LINE")
+            ((eval 'unset-steel-mode!)))))
 
 (define (is-visual-line-mode?)
-  (unbox *visual-line-mode-box*))
+  (with-handler
+    (lambda (e) #f)
+    (equal? ((eval 'steel-mode)) "VIS-LINE")))
 
 (define (string-blank? str)
   (let loop ([i 0])
@@ -250,17 +252,17 @@
                    ;; Move back to original position
                    (move-to-position cur-pos)
 
-                   ;; Check if match is after our cursor (meaning we're inside)
+                   ;; Check if match is at or after our cursor (>= handles cursor-on-closing-bracket)
                    (if (and (not (= bracket-pos match-pos)) ; Matched something
-                            (> match-pos cur-pos)) ; Match is after cursor
+                            (>= match-pos cur-pos)) ; Match is at or after cursor
                        (cons bracket-pos match-pos) ; Found it!
                        (loop (- pos 1)))) ; Keep searching
                  ;; Not the target bracket, keep searching
                  (loop (- pos 1))))]))))
 
+;; Search forward from cur-pos for the next occurrence of target-ch
 (define (find-next-bracket rope cur-pos target-ch)
   (define len (rope-len-chars rope))
-
   (let loop ([pos cur-pos])
     (cond
       [(>= pos len) #f]
@@ -270,28 +272,19 @@
              pos
              (loop (+ pos 1))))])))
 
-;; Find bracket pair with forward search fallback
+;; Find bracket pair: enclosing first, then forward seek (matches neovim current_block behavior)
 (define (find-bracket-pair rope cur-pos target-open-ch)
-  ;; First try to find enclosing pair
   (let ([enclosing (find-enclosing-pair-with-match rope cur-pos target-open-ch)])
     (if enclosing
         enclosing
-        ;; Not inside pair - search forward and check
         (let ([next-pos (find-next-bracket rope cur-pos target-open-ch)])
           (if next-pos
               (begin
-                ;; Move to the bracket
                 (move-to-position next-pos)
                 (define bracket-pos (cursor-position))
-
-                ;; Use match_brackets to find pair
                 (helix.static.match_brackets)
                 (define match-pos (cursor-position))
-
-                ;; Move back to original
                 (move-to-position cur-pos)
-
-                ;; Return pair if we found a match
                 (if (not (= bracket-pos match-pos))
                     (cons bracket-pos match-pos)
                     #f))
@@ -326,34 +319,19 @@
   (define close-ch (get-closing-bracket open-ch))
   (define len (rope-len-chars rope))
 
-  (displayln (string-append "find-matching-close from pos " (number->string start-pos)))
-
   (let loop ([pos (+ start-pos 1)]
              [depth 1]
              [iter 0])
     (cond
-      [(>= pos len)
-       (displayln "Reached end of file, no match found")
-       #f]
-      [(> iter 1000)
-       (displayln "Too many iterations, stopping")
-       #f]
+      [(>= pos len) #f]
+      [(> iter 1000) #f]
       [else
        (let ([ch (rope-char-ref rope pos)])
-         (when (and (< iter 20) (or (char=? ch open-ch) (char=? ch close-ch)))
-           (displayln (string-append "  pos "
-                                     (number->string pos)
-                                     ": "
-                                     (string ch)
-                                     " depth="
-                                     (number->string depth))))
          (cond
            [(char=? ch open-ch) (loop (+ pos 1) (+ depth 1) (+ iter 1))]
            [(char=? ch close-ch)
             (if (= depth 1)
-                (begin
-                  (displayln (string-append "Found matching close at " (number->string pos)))
-                  pos)
+                pos
                 (loop (+ pos 1) (- depth 1) (+ iter 1)))]
            [else (loop (+ pos 1) depth (+ iter 1))]))])))
 
@@ -521,7 +499,6 @@
          extend-right-n
          do-n-times
          is-bracket?
-         get-selection-range
          has-real-selection?
          move-to-position
          move-to-char
@@ -544,4 +521,6 @@
          find-next-bracket
          find-bracket-pair
          get-next-word-start
-         get-next-long-word-start)
+         get-next-long-word-start
+         editor-count
+         set-editor-count!)
