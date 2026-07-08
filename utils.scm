@@ -145,16 +145,12 @@
            [else (loop (+ i 1))]))])))
 
 (define (set-visual-line-mode! val)
-  (with-handler
-     (lambda (e) (void))
-        (if val
-            ((eval 'set-steel-mode!) "VIS-LINE")
-            ((eval 'unset-steel-mode!)))))
+  (if val
+      (set-steel-mode! "VIS-LINE")
+      (unset-steel-mode!)))
 
 (define (is-visual-line-mode?)
-  (with-handler
-    (lambda (e) #f)
-    (equal? ((eval 'steel-mode)) "VIS-LINE")))
+  (equal? (steel-mode) "VIS-LINE"))
 
 (define (string-blank? str)
   (let loop ([i 0])
