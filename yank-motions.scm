@@ -11,6 +11,20 @@
 
 (require-builtin helix/core/text)
 
+;; ── Linewise register (vim yy/dd → p/P) ──────────────────────────────────────
+;; Helix registers don't track vim's linewise-ness, so we track it here: yy
+;; records the line text and marks the last yank linewise; every characterwise
+;; yank clears the flag (via yank-selection-ranges). vim-paste-after/before then
+;; paste linewise (on a new line) or fall back to the normal clipboard paste.
+(define *yank-linewise* (box #f))
+(define *linewise-text* (box ""))
+
+(define (strip-trailing-newline s)
+  (if (and (> (string-length s) 0)
+           (char=? (string-ref s (- (string-length s) 1)) #\newline))
+      (substring s 0 (- (string-length s) 1))
+      s))
+
 ;; Yank flash: briefly highlight the yanked region as visual confirmation.
 ;; Requires set-document-highlights! / selection-char-ranges (helix-steel
 ;; script-highlights API). Uses eval so it degrades gracefully on older builds.
@@ -32,6 +46,9 @@
            ((eval 'clear-document-highlights!) "yank"))))))))
 
 (define (yank-selection-ranges)
+  ;; Any yank routed through here is characterwise unless the caller (yy) marks
+  ;; it linewise afterward.
+  (set-box! *yank-linewise* #f)
   (with-handler
    (lambda (e) '())
    ((eval 'selection-char-ranges))))
@@ -153,7 +170,13 @@
     (helix.static.extend_line_down))
   (helix.static.extend_to_line_bounds)
   (define ranges (yank-selection-ranges))
+  ;; Record the line text and mark this yank linewise (after yank-selection-ranges,
+  ;; which resets the flag). Include a trailing newline so it's a whole line.
+  (set-box! *linewise-text*
+            (string-append (strip-trailing-newline (helix.static.current-highlighted-text!))
+                           "\n"))
   (helix.static.yank_main_selection_to_clipboard)
+  (set-box! *yank-linewise* #t)
   (helix.static.normal_mode)
   (helix.static.collapse_selection)
   (define current-pos (cursor-position))
@@ -219,7 +242,33 @@
 (define (yank-around-long-word)        (yank-impl select-around-long-word))
 (define (yank-inner-long-word)         (yank-impl select-inner-long-word))
 
-(provide vim-yank-selection
+;; ── p / P — linewise-aware paste ─────────────────────────────────────────────
+;; If the last yank was linewise (yy), paste the line on its own new line below
+;; (p) or above (P), matching vim. Otherwise fall back to the normal clipboard
+;; paste so characterwise yanks behave as before.
+
+;; p
+(define (vim-paste-after)
+  (if (unbox *yank-linewise*)
+      (let ([text (strip-trailing-newline (unbox *linewise-text*))])
+        (helix.static.goto_line_end)
+        (helix.static.insert_string (string-append "\n" text))
+        (helix.static.goto_line_start))
+      (helix.static.paste_clipboard_after)))
+
+;; P
+(define (vim-paste-before)
+  (if (unbox *yank-linewise*)
+      (let ([text (strip-trailing-newline (unbox *linewise-text*))])
+        (helix.static.goto_line_start)
+        (helix.static.insert_string (string-append text "\n"))
+        (helix.static.move_line_up)
+        (helix.static.goto_line_start))
+      (helix.static.paste_clipboard_before)))
+
+(provide vim-paste-after
+         vim-paste-before
+         vim-yank-selection
          yank-around-word
          yank-inner-word
          yank-around-paragraph

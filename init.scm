@@ -53,8 +53,8 @@
                   (% "match_brackets")
                   (X "no_op")
                   (A-x "no_op")
-                  (p ":clipboard-paste-after")
-                  (P ":clipboard-paste-before")
+                  (p ":vim-paste-after")
+                  (P ":vim-paste-before")
                   ;; TODO: More delete things
                   (d (d ":vim-delete-line")
                      (w ":vim-delete-word")
@@ -515,5 +515,7 @@
          yank-line-start
          yank-line-start-non-whitespace
          vim-yank-line
+         vim-paste-after
+         vim-paste-before
          *yank-flash-delay*
          *yank-flash-scope*)
