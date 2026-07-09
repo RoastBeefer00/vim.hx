@@ -6,6 +6,7 @@
 (require "helix/misc.scm")
 (require "helix/components.scm")
 (require "helix/editor.scm")
+(require "helix/treesitter.scm")
 
 (require-builtin steel/time)
 
@@ -197,13 +198,71 @@
 (define (select-inner-data-structure)
   (select-inner-impl e-key))
 
-;; vax
-(define (select-around-html-tag)
-  (select-around-impl x-key))
+;; ── Tag text objects via tree-walking ────────────────────────────────────────
+;; Helix's native xml-element textobject only resolves when the cursor sits on
+;; a captured node (the content), so `it`/`at` fail when the cursor is on the
+;; tags or whitespace. Walk the tree to the enclosing element instead, so tag
+;; motions work from anywhere inside the tag — in HTML-family grammars and rstml
+;; (Leptos view!) alike, using the injection layer's tree at the cursor.
 
-;; vix
+(define *tag-element-kinds* '("element" "element_node"))
+(define *tag-open-kinds*    '("start_tag" "open_tag"))
+(define *tag-close-kinds*   '("end_tag" "close_tag"))
+
+(define (tag-find-ancestor node kinds)
+  (let loop ([n node])
+    (cond
+      [(not n) #f]
+      [(member (tsnode-kind n) kinds) n]
+      [else (loop (tsnode-parent n))])))
+
+(define (tag-find-child node kinds)
+  (let loop ([cs (tsnode-named-children node)])
+    (cond
+      [(null? cs) #f]
+      [(member (tsnode-kind (car cs)) kinds) (car cs)]
+      [else (loop (cdr cs))])))
+
+;; The element_node enclosing the cursor, using the injection layer's tree.
+(define (enclosing-tag-element)
+  (define doc-id (editor->doc-id (editor-focus)))
+  (define rope (editor->text doc-id))
+  (and rope
+       (let* ([cb   (rope-char->byte rope (cursor-position))]
+              [tree (document->tree-byte-range doc-id cb cb)])
+         (and tree
+              (let* ([root (tstree->root tree)]
+                     [leaf (tsnode-named-descendant-byte-range root cb cb)])
+                (tag-find-ancestor leaf *tag-element-kinds*))))))
+
+;; Set the primary selection to the half-open char range [start, end).
+(define (tag-select-range! start end)
+  (helix.static.set-current-selection-object!
+    (helix.static.range->selection (helix.static.range start end))))
+
+;; vax / cat / dat / yat — select the whole enclosing element.
+(define (select-around-html-tag)
+  (define el (enclosing-tag-element))
+  (and el
+       (let ([rope (editor->text (editor->doc-id (editor-focus)))])
+         (tag-select-range!
+           (rope-byte->char rope (tsnode-start-byte el))
+           (rope-byte->char rope (tsnode-end-byte el)))
+         #t)))
+
+;; vix / cit / dit / yit — select the content between the open and close tags.
 (define (select-inner-html-tag)
-  (select-inner-impl x-key))
+  (define el (enclosing-tag-element))
+  (and el
+       (let* ([rope  (editor->text (editor->doc-id (editor-focus)))]
+              [open  (tag-find-child el *tag-open-kinds*)]
+              [close (tag-find-child el *tag-close-kinds*)])
+         (and open close
+              (begin
+                (tag-select-range!
+                  (rope-byte->char rope (tsnode-end-byte open))
+                  (rope-byte->char rope (tsnode-start-byte close)))
+                #t)))))
 
 ;; vit
 (define (select-around-type-definition)
