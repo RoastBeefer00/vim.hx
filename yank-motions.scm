@@ -243,8 +243,12 @@
 (define (vim-paste-after)
   (if (unbox *yank-linewise*)
       (let ([text (strip-trailing-newline (unbox *linewise-text*))])
-        (helix.static.goto_line_end)
+        ;; insert_at_line_end puts the cursor *after* the last char (insert
+        ;; mode); goto_line_end would leave it *on* the last char, so
+        ;; insert_string would split the line.
+        (helix.static.insert_at_line_end)
         (helix.static.insert_string (string-append "\n" text))
+        (helix.static.normal_mode)
         (helix.static.goto_line_start))
       (helix.static.paste_clipboard_after)))
 
