@@ -34,24 +34,16 @@
 
 (define (yank-flash! ranges)
   (unless (null? ranges)
-    (with-handler
-     (lambda (e) (void))
-     (let ([set-hl! (eval 'set-document-highlights!)])
-       (set-hl! "yank" ranges *yank-flash-scope*)
-       (enqueue-thread-local-callback-with-delay
-        *yank-flash-delay*
-        (lambda ()
-          (with-handler
-           (lambda (e) (void))
-           ((eval 'clear-document-highlights!) "yank"))))))))
+    (set-document-highlights! "yank" ranges *yank-flash-scope*)
+    (enqueue-thread-local-callback-with-delay
+     *yank-flash-delay*
+     (lambda () (clear-document-highlights! "yank")))))
 
 (define (yank-selection-ranges)
   ;; Any yank routed through here is characterwise unless the caller (yy) marks
   ;; it linewise afterward.
   (set-box! *yank-linewise* #f)
-  (with-handler
-   (lambda (e) '())
-   ((eval 'selection-char-ranges))))
+  (selection-char-ranges))
 
 (define (yank-impl func)
   (when (func)
