@@ -54,19 +54,27 @@
     (yank-flash! ranges)))
 
 ;; y (select)
+;;@doc
+;; Yank the current selection (y in select mode).
 (define (vim-yank-selection)
   (yank-impl helix.static.no_op)
   (exit-visual-line-mode))
 
 ;; yaw
+;;@doc
+;; Yank a word and its surrounding whitespace (yaw).
 (define (yank-around-word)
   (yank-impl select-around-word))
 
 ;; yiw
+;;@doc
+;; Yank a word (yiw).
 (define (yank-inner-word)
   (yank-impl select-inner-word))
 
 ;; yw
+;;@doc
+;; Yank to the start of the next word (yw).
 (define (yank-word)
   (vim-extend-next-word-start)
   (set-editor-count! 1)
@@ -78,6 +86,8 @@
   (yank-flash! ranges))
 
 ;; yW
+;;@doc
+;; Yank to the start of the next WORD (yW).
 (define (yank-long-word)
   (vim-extend-next-long-word-start)
   (set-editor-count! 1)
@@ -89,6 +99,8 @@
   (yank-flash! ranges))
 
 ;; yf{char}
+;;@doc
+;; Yank up to and including the next occurrence of a character (yf).
 (define (yank-find-char)
   (on-key-callback
    (lambda (key-event)
@@ -111,6 +123,8 @@
            [else (loop (+ i 1))]))))))
 
 ;; yt{char}
+;;@doc
+;; Yank up to (not including) the next occurrence of a character (yt).
 (define (yank-till-char)
   (on-key-callback
    (lambda (key-event)
@@ -134,26 +148,38 @@
            [else (loop (+ i 1))]))))))
 
 ;; yb
+;;@doc
+;; Yank to the start of the previous word (yb).
 (define (yank-prev-word)
   (yank-impl helix.static.extend_prev_word_start))
 
 ;; yB
+;;@doc
+;; Yank to the start of the previous WORD (yB).
 (define (yank-prev-long-word)
   (yank-impl helix.static.extend_prev_long_word_start))
 
 ;; y$
+;;@doc
+;; Yank to the end of the line (y$).
 (define (yank-line-end)
   (yank-impl helix.static.extend_to_line_end))
 
 ;; y^
+;;@doc
+;; Yank to column 0 of the line (y0).
 (define (yank-line-start)
   (yank-impl helix.static.extend_to_line_start))
 
 ;; y0
+;;@doc
+;; Yank to the first non-whitespace character of the line (y^).
 (define (yank-line-start-non-whitespace)
   (yank-impl helix.static.extend_to_first_nonwhitespace))
 
 ;; yy
+;;@doc
+;; Yank the current line(s) (yy).
 (define (vim-yank-line)
   (define start-pos (cursor-position))
   (define count (editor-count))
@@ -179,59 +205,115 @@
   (yank-flash! ranges))
 
 ;; yap/yip
+;;@doc
+;; Yank a paragraph and its surrounding blank lines (yap).
 (define (yank-around-paragraph)        (yank-impl select-around-paragraph))
+;;@doc
+;; Yank a paragraph (yip).
 (define (yank-inner-paragraph)         (yank-impl select-inner-paragraph))
 
 ;; yaf/yif
+;;@doc
+;; Yank a function and its surrounding whitespace (yaf).
 (define (yank-around-function)         (yank-impl select-around-function))
+;;@doc
+;; Yank a function's body (yif).
 (define (yank-inner-function)          (yank-impl select-inner-function))
 
 ;; yac/yic
+;;@doc
+;; Yank a comment block (yac).
 (define (yank-around-comment)          (yank-impl select-around-comment))
+;;@doc
+;; Yank a comment's contents (yic).
 (define (yank-inner-comment)           (yank-impl select-inner-comment))
 
 ;; yae/yie
+;;@doc
+;; Yank a data-structure literal and its surrounding whitespace (yae).
 (define (yank-around-data-structure)   (yank-impl select-around-data-structure))
+;;@doc
+;; Yank a data-structure literal's contents (yie).
 (define (yank-inner-data-structure)    (yank-impl select-inner-data-structure))
 
 ;; yax/yix
+;;@doc
+;; Yank an HTML/JSX tag and its contents (yat).
 (define (yank-around-html-tag)         (yank-impl select-around-html-tag))
+;;@doc
+;; Yank the contents of an HTML/JSX tag (yit).
 (define (yank-inner-html-tag)          (yank-impl select-inner-html-tag))
 
 ;; yat/yit
+;;@doc
+;; Yank a type definition and its surrounding whitespace (yax).
 (define (yank-around-type-definition)  (yank-impl select-around-type-definition))
+;;@doc
+;; Yank a type definition's body (yix).
 (define (yank-inner-type-definition)   (yank-impl select-inner-type-definition))
 
 ;; yaT/yiT
+;;@doc
+;; Yank a test block and its surrounding whitespace (yaT).
 (define (yank-around-test)             (yank-impl select-around-test))
+;;@doc
+;; Yank a test block's body (yiT).
 (define (yank-inner-test)              (yank-impl select-inner-test))
 
 ;; ya{/yi{
+;;@doc
+;; Yank a { } block, including the braces (ya{).
 (define (yank-around-curly)            (yank-impl select-around-curly))
+;;@doc
+;; Yank the contents of a { } block (yi{).
 (define (yank-inner-curly)             (yank-impl select-inner-curly))
 
 ;; ya[/yi[
+;;@doc
+;; Yank a [ ] block, including the brackets (ya[).
 (define (yank-around-square)           (yank-impl select-around-square))
+;;@doc
+;; Yank the contents of a [ ] block (yi[).
 (define (yank-inner-square)            (yank-impl select-inner-square))
 
 ;; ya(/yi(
+;;@doc
+;; Yank a ( ) block, including the parens (ya().
 (define (yank-around-paren)            (yank-impl select-around-paren))
+;;@doc
+;; Yank the contents of a ( ) block (yi().
 (define (yank-inner-paren)             (yank-impl select-inner-paren))
 
 ;; ya"/yi"
+;;@doc
+;; Yank a "double-quoted" string, including the quotes (ya").
 (define (yank-around-double-quote)     (yank-impl select-around-double-quote))
+;;@doc
+;; Yank the contents of a "double-quoted" string (yi").
 (define (yank-inner-double-quote)      (yank-impl select-inner-double-quote))
 
 ;; ya'/yi'
+;;@doc
+;; Yank a 'single-quoted' string, including the quotes (ya').
 (define (yank-around-single-quote)     (yank-impl select-around-single-quote))
+;;@doc
+;; Yank the contents of a 'single-quoted' string (yi').
 (define (yank-inner-single-quote)      (yank-impl select-inner-single-quote))
 
 ;; ya</yi<
+;;@doc
+;; Yank a < > block, including the angle brackets (ya<).
 (define (yank-around-arrow)            (yank-impl select-around-arrow))
+;;@doc
+;; Yank the contents of a < > block (yi<).
 (define (yank-inner-arrow)             (yank-impl select-inner-arrow))
 
 ;; yaW/yiW
+;;@doc
+;; Yank a WORD and its surrounding whitespace (yaW).
 (define (yank-around-long-word)        (yank-impl select-around-long-word))
+;;@doc
+;; Yank a WORD (yiW).
 (define (yank-inner-long-word)         (yank-impl select-inner-long-word))
 
 ;; ── p / P — linewise-aware paste ─────────────────────────────────────────────
@@ -240,6 +322,8 @@
 ;; paste so characterwise yanks behave as before.
 
 ;; p
+;;@doc
+;; Paste after the cursor/line (p).
 (define (vim-paste-after)
   (if (unbox *yank-linewise*)
       (let ([text (strip-trailing-newline (unbox *linewise-text*))])
@@ -253,6 +337,8 @@
       (helix.static.paste_clipboard_after)))
 
 ;; P
+;;@doc
+;; Paste before the cursor/line (P).
 (define (vim-paste-before)
   (if (unbox *yank-linewise*)
       (let ([text (strip-trailing-newline (unbox *linewise-text*))])

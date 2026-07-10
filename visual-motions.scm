@@ -13,6 +13,8 @@
 (require-builtin helix/core/text)
 
 ;; l
+;;@doc
+;; Extend the selection right one character, stopping at end of line (l).
 (define (extend-char-right-same-line)
   (define count (editor-count))
   (do-n-times count extend-char-right-same-line-impl))
@@ -26,6 +28,8 @@
       (helix.static.extend_char_right))))
 
 ;; h
+;;@doc
+;; Extend the selection left one character, stopping at start of line (h).
 (define (extend-char-left-same-line)
   (define count (editor-count))
   (do-n-times count extend-char-left-same-line-impl))
@@ -39,6 +43,8 @@
       (helix.static.extend_char_left))))
 
 ;; k
+;;@doc
+;; Extend the selection up one line (k).
 (define (extend-line-up)
   (helix.static.extend_line_up)
   (extend-line-up-impl)
@@ -46,6 +52,8 @@
     (helix.static.extend_to_line_bounds)))
 
 ;; k in VIS-LINE steel mode — dispatched from vis-line-keymap, no flag check needed
+;;@doc
+;; Extend a linewise (VIS-LINE) selection up one line (k).
 (define (extend-line-up-vis-line)
   (helix.static.extend_line_up)
   (extend-line-up-impl)
@@ -60,6 +68,8 @@
       (extend-char-left-same-line-impl))))
 
 ;; j
+;;@doc
+;; Extend the selection down one line (j).
 (define (extend-line-down)
   (helix.static.extend_line_down)
   (extend-line-down-impl)
@@ -67,6 +77,8 @@
     (helix.static.extend_to_line_bounds)))
 
 ;; j in VIS-LINE steel mode — dispatched from vis-line-keymap, no flag check needed
+;;@doc
+;; Extend a linewise (VIS-LINE) selection down one line (j).
 (define (extend-line-down-vis-line)
   (helix.static.extend_line_down)
   (extend-line-down-impl)
@@ -81,6 +93,8 @@
       (extend-char-left-same-line-impl))))
 
 ;; w
+;;@doc
+;; Extend the selection to the start of the next word (w).
 (define (vim-extend-next-word-start)
   (define count (editor-count))
   (do-n-times count vim-extend-next-word-start-impl))
@@ -89,6 +103,8 @@
   (get-next-word-start extend-right-n))
 
 ;; W
+;;@doc
+;; Extend the selection to the start of the next WORD (W).
 (define (vim-extend-next-long-word-start)
   (define count (editor-count))
   (do-n-times count vim-extend-next-long-word-start-impl))
@@ -97,11 +113,15 @@
   (get-next-long-word-start extend-right-n))
 
 ;; { (select)
+;;@doc
+;; Extend the selection to the start of the previous paragraph ({).
 (define (vim-extend-to-prev-paragraph)
   (helix.static.extend_to_line_bounds)
   (helix.static.goto_prev_paragraph))
 
 ;; } (select)
+;;@doc
+;; Extend the selection to the start of the next paragraph (}).
 (define (vim-extend-to-next-paragraph)
   (helix.static.extend_to_line_bounds)
   (helix.static.goto_next_paragraph))
@@ -115,14 +135,20 @@
   (trigger-on-key-callback key))
 
 ;; vaw
+;;@doc
+;; Select a word and its surrounding whitespace (vaw).
 (define (select-around-word)
   (select-around-impl w-key))
 
 ;; viw
+;;@doc
+;; Select a word (viw).
 (define (select-inner-word)
   (select-inner-impl w-key))
 
 ;; vap
+;;@doc
+;; Select a paragraph and its surrounding blank lines (vap).
 (define (select-around-paragraph)
   (define rope (get-document-as-slice))
   (define cur-pos (cursor-position))
@@ -152,6 +178,8 @@
   (extend-to-position (- end-char 1)))
 
 ;; vip
+;;@doc
+;; Select a paragraph (vip).
 (define (select-inner-paragraph)
   (define rope (get-document-as-slice))
   (define cur-pos (cursor-position))
@@ -175,26 +203,38 @@
   (extend-to-position (- end-char 1)))
 
 ;; vaf
+;;@doc
+;; Select a function and its surrounding whitespace (vaf).
 (define (select-around-function)
   (select-around-impl f-key))
 
 ;; vif
+;;@doc
+;; Select a function's body (vif).
 (define (select-inner-function)
   (select-inner-impl f-key))
 
 ;; vac
+;;@doc
+;; Select a comment block (vac).
 (define (select-around-comment)
   (select-around-impl c-key))
 
 ;; vic
+;;@doc
+;; Select a comment's contents (vic).
 (define (select-inner-comment)
   (select-inner-impl c-key))
 
 ;; vae
+;;@doc
+;; Select a data-structure literal and its surrounding whitespace (vae).
 (define (select-around-data-structure)
   (select-around-impl e-key))
 
 ;; vie
+;;@doc
+;; Select a data-structure literal's contents (vie).
 (define (select-inner-data-structure)
   (select-inner-impl e-key))
 
@@ -241,6 +281,8 @@
     (helix.static.range->selection (helix.static.range start end))))
 
 ;; vax / cat / dat / yat — select the whole enclosing element.
+;;@doc
+;; Select an HTML/JSX tag and its contents (vat).
 (define (select-around-html-tag)
   (define el (enclosing-tag-element))
   (and el
@@ -251,6 +293,8 @@
          #t)))
 
 ;; vix / cit / dit / yit — select the content between the open and close tags.
+;;@doc
+;; Select the contents of an HTML/JSX tag (vit).
 (define (select-inner-html-tag)
   (define el (enclosing-tag-element))
   (and el
@@ -265,26 +309,38 @@
                 #t)))))
 
 ;; vit
+;;@doc
+;; Select a type definition and its surrounding whitespace (vax).
 (define (select-around-type-definition)
   (select-around-impl t-key))
 
 ;; vit
+;;@doc
+;; Select a type definition's body (vix).
 (define (select-inner-type-definition)
   (select-inner-impl t-key))
 
 ;; vaT
+;;@doc
+;; Select a test block and its surrounding whitespace (vaT).
 (define (select-around-test)
   (select-around-impl T-key))
 
 ;; viT
+;;@doc
+;; Select a test block's body (viT).
 (define (select-inner-test)
   (select-inner-impl T-key))
 
 ;; vaW
+;;@doc
+;; Select a WORD and its surrounding whitespace (vaW).
 (define (select-around-long-word)
   (select-around-impl W-key))
 
 ;; viW
+;;@doc
+;; Select a WORD (viW).
 (define (select-inner-long-word)
   (select-inner-impl W-key))
 
@@ -413,43 +469,69 @@
              #t)))
 
 ;; Public API functions
+;;@doc
+;; Select the contents of a { } block (vi{).
 (define (select-inner-curly)
   (select-inner-bracket #\{))
 
+;;@doc
+;; Select a { } block, including the braces (va{).
 (define (select-around-curly)
   (select-around-bracket #\{))
 
+;;@doc
+;; Select the contents of a ( ) block (vi().
 (define (select-inner-paren)
   (select-inner-bracket #\())
 
+;;@doc
+;; Select a ( ) block, including the parens (va().
 (define (select-around-paren)
   (select-around-bracket #\())
 
+;;@doc
+;; Select the contents of a [ ] block (vi[).
 (define (select-inner-square)
   (select-inner-bracket #\[))
 
+;;@doc
+;; Select a [ ] block, including the brackets (va[).
 (define (select-around-square)
   (select-around-bracket #\[))
 
+;;@doc
+;; Select the contents of a "double-quoted" string (vi").
 (define (select-inner-double-quote)
   (select-inner-quote #\"))
 
+;;@doc
+;; Select a "double-quoted" string, including the quotes (va").
 (define (select-around-double-quote)
   (select-around-quote #\"))
 
+;;@doc
+;; Select the contents of a 'single-quoted' string (vi').
 (define (select-inner-single-quote)
   (select-inner-quote #\'))
 
+;;@doc
+;; Select a 'single-quoted' string, including the quotes (va').
 (define (select-around-single-quote)
   (select-around-quote #\'))
 
+;;@doc
+;; Select the contents of a < > block (vi<).
 (define (select-inner-arrow)
   (select-inner-bracket #\<))
 
+;;@doc
+;; Select a < > block, including the angle brackets (va<).
 (define (select-around-arrow)
   (select-around-bracket #\<))
 
 ;; f(char)
+;;@doc
+;; Extend the selection to the next occurrence of a character (f in select mode).
 (define (select-find-next-char)
   (define count (editor-count))
   (on-key-callback (lambda (key-event)
@@ -480,6 +562,8 @@
   (find-repeat count char))
 
 ;; F(char)
+;;@doc
+;; Extend the selection to the previous occurrence of a character (F in select mode).
 (define (select-find-prev-char)
   (define count (editor-count))
   (on-key-callback (lambda (key-event)
@@ -510,6 +594,8 @@
   (find-repeat count char))
 
 ;; t(char)
+;;@doc
+;; Extend the selection to just before the next occurrence of a character (t in select mode).
 (define (select-find-till-char)
   (define count (editor-count))
   (on-key-callback (lambda (key-event)
@@ -547,6 +633,8 @@
   (find-till-repeat count char))
 
 ;; T(char)
+;;@doc
+;; Extend the selection to just after the previous occurrence of a character (T in select mode).
 (define (select-till-prev-char)
   (define count (editor-count))
   (on-key-callback (lambda (key-event)
@@ -584,6 +672,8 @@
   (find-till-repeat count char))
 
 ;; ,
+;;@doc
+;; Repeat the last character search, extending the selection (, in select mode).
 (define (select-repeat-last-find)
   (define count (editor-count))
   (define find-macro (to-string (first (register->value #\,))))
@@ -596,6 +686,8 @@
     [(equal? action #\T) (select-till-prev-char-impl char count)]))
 
 ;; ;
+;;@doc
+;; Repeat the last character search in reverse, extending the selection (; in select mode).
 (define (select-reverse-last-find)
   (define count (editor-count))
   (define find-macro (to-string (first (register->value #\,))))
@@ -607,6 +699,8 @@
     [(equal? action #\t) (select-till-prev-char-impl char count)]
     [(equal? action #\T) (select-find-till-char-impl char count)]))
 
+;;@doc
+;; Exit VIS-LINE mode back to normal mode (Esc).
 (define (exit-visual-line-mode)
   (when (is-visual-line-mode?)
     (set-visual-line-mode! #f))
